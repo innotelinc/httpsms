@@ -1,4 +1,4 @@
-module github.com/NdoleStudio/httpsms
+module github.com/innotelinc/httpsms
 
 go 1.18
 
