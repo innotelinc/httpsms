@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/NdoleStudio/httpsms/docs"
-	"github.com/NdoleStudio/httpsms/pkg/di"
+	"github.com/innotelinc/httpsms/pkg/di"
 )
 
 // Version is injected at runtime
