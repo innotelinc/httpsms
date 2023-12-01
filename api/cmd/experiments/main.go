@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/palantir/stacktrace"
 
 	"github.com/NdoleStudio/httpsms/pkg/di"
 	"github.com/NdoleStudio/httpsms/pkg/entities"
@@ -27,6 +30,37 @@ func main() {
 	logger := container.Logger()
 
 	logger.Info("Starting experiments")
+}
+
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
+}
+
+func deleteContacts(container *di.Container) {
+	sendgrid := container.MarketingService()
+	logger := container.Logger()
+
+	b, err := os.ReadFile("28462979_cf6f5478-3e15-4666-95d7-59149df6f0fd.csv") // just pass the file name
+	if err != nil {
+		logger.Fatal(stacktrace.Propagate(err, "cannot read file"))
+	}
+
+	lines := strings.Split(string(b), "\n")[1:]
+	var contacts []string
+	for _, line := range lines {
+		contacts = append(contacts, strings.ReplaceAll(strings.Split(line, ",")[17], "\"", ""))
+	}
+
+	chunks := chunkBy(contacts, 100)
+	for _, chunk := range chunks {
+		err = sendgrid.DeleteContacts(context.Background(), chunk)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
 }
 
 func text3CX() {
@@ -51,7 +85,6 @@ func loadTest() {
 		wg.Add(1)
 		go func(count int) {
 			sendSMS(fmt.Sprintf("[%d] In the quiet of the night, the stars above whisper secrets of the universe. We, mere stardust, seek meaning in their cosmic dance, yearning to unlock the mysteries of existence that stretch far beyond our earthly bounds.", count))
-			sendSMS(fmt.Sprintf("[%d] Hello, World", count))
 			wg.Done()
 		}(i)
 
